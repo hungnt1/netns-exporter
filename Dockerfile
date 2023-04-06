@@ -1,5 +1,5 @@
 # Stage 1: Build netns exporter
-FROM golang:1.15 AS builder
+FROM golang:1.18 AS builder
 
 ENV CGO_ENABLED=0
 ENV GOOS=linux

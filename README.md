@@ -4,8 +4,6 @@ Prometheus exporter for monitoring interface statistics and /proc filesystem sta
 
 **⚠️The exporter should be run with root privileges on the host system or have capabilities to mange network namespaces.⚠️**
 
-## Install
-Download [releases](https://github.com/velp/netns-exporter/releases).
 
 ## Build
  For Linux system:
@@ -110,3 +108,7 @@ docker run --name netns-exporter -d -p8080:8080 --privileged --mount type=bind,s
 ## Contribution
 Want to contribute! That's awesome! Check out [CONTRIBUTING documentation](https://github.com/jexia/jexia-cli/blob/master/CONTRIBUTING.rst).
 
+
+
+## Credit
+- This project forked from https://github.com/velp/netns-exporter and develop for monitor router openstack
