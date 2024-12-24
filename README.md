@@ -2,7 +2,7 @@
 
 Prometheus exporter for monitoring interface statistics and /proc filesystem statistics in each Linux network namespace.
 
-**⚠️The exporter should be run with root privileges on the host system or have capabilities to mange network namespaces.⚠️**
+**⚠️The exporter should be run with root privileges on the host system or have capabilities to mange network namespaces**
 
 
 ## Build
@@ -22,7 +22,47 @@ Docker Image
  make docker-image
  ```
 
-## Example
+## OpenStack Example
+
+Create sample namespace like openstack router:
+
+```bash
+sudo ip netns add qrouter-1b5c74fb-56a8-4fbc-8e4e-c30f620b11bd
+sudo ip netns add qrouter-27e6b9c0-73c4-4624-9481-eb5c90f109bd
+
+sudo ip link add qr-aabbcc1 type veth peer name qr-aabbcc2
+sudo ip link add qg-aabbcc1 type veth peer name qg-aabbcc2
+
+sudo ip link set qr-aabbcc2 netns qrouter-1b5c74fb-56a8-4fbc-8e4e-c30f620b11bd
+sudo ip link set qg-aabbcc2 netns qrouter-27e6b9c0-73c4-4624-9481-eb5c90f109bd
+
+sudo ip netns exec  qrouter-27e6b9c0-73c4-4624-9481-eb5c90f109bd ip link set qg-aabbcc2 up
+sudo ip netns exec  qrouter-27e6b9c0-73c4-4624-9481-eb5c90f109bd ip add add 192.168.110.10/24 dev qg-aabbcc2
+```
+
+Build and run with **sudo** :
+
+```bash
+make build
+sudo ./netns-exporter
+INFO[0000] Starting API server on 127.0.0.1:8080         component=api-server
+
+```
+
+Test:
+
+```bash
+$ curl http://127.0.0.1:8080/metrics | grep up
+```
+Result
+```
+# HELP netns_network__up Value is 1 if operstate is 'up', 0 otherwise.
+# TYPE netns_network__up counter
+netns_network__up{device="qg-aabbcc2",deviceIP="192.168.110.10",host="fedora",netns="qrouter-27e6b9c0-73c4-4624-9481-eb5c90f109bd",router="27e6b9c0-73c4-4624-9481-eb5c90f109bd"} 1
+netns_network__up{device="qr-aabbcc2",deviceIP="",host="fedora",netns="qrouter-1b5c74fb-56a8-4fbc-8e4e-c30f620b11bd" router="1b5c74fb-56a8-4fbc-8e4e-c30f620b11bd"} 0
+```
+
+## Genral Example
 For example, for two Linux network namespaces like:
 
 ```
