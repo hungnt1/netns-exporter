@@ -96,7 +96,7 @@ namespaces_filter:
 device_filter:
   blacklist_pattern: regexp_pattern1
   whitelist_pattern: regexp_pattern2
-  
+
 ```
 With the simultaneous use of two filters, the blacklist filter has a higher priority.
 

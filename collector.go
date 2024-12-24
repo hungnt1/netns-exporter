@@ -2,13 +2,14 @@ package main
 
 import (
 	"io/ioutil"
+	"net"
 	"os"
 	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
-    "net"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"github.com/vishvananda/netns"
@@ -23,14 +24,15 @@ const (
 	collectorSubsystem = "network"
 	netnsLabel         = "netns"
 	deviceLabel        = "device"
-	router		   	   = "router"
-	host			   = "host"
-	deviceIP		   = "deviceIP"
+	router             = "router"
+	host               = "host"
+	deviceIP           = "deviceIP"
 )
 
 type Collector struct {
 	logger      logrus.FieldLogger
 	config      *NetnsExporterConfig
+	intfStatus  *prometheus.Desc
 	intfMetrics map[string]*prometheus.Desc
 	procMetrics map[string]*PrometheusProcMetric
 }
@@ -41,6 +43,15 @@ type PrometheusProcMetric struct {
 }
 
 func NewCollector(config *NetnsExporterConfig, logger *logrus.Logger) *Collector {
+
+	// Add descriptions for interface adminStatus metric
+	intfStatus := prometheus.NewDesc(
+		prometheus.BuildFQName(collectorNamespace, collectorSubsystem, "_up"),
+		"Value is 1 if operstate is 'up', 0 otherwise.",
+		[]string{netnsLabel, deviceLabel, router, host, deviceIP},
+		nil,
+	)
+
 	// Add descriptions for interface metrics
 	intfMetrics := make(map[string]*prometheus.Desc, len(config.InterfaceMetrics))
 	for _, metric := range config.InterfaceMetrics {
@@ -68,12 +79,16 @@ func NewCollector(config *NetnsExporterConfig, logger *logrus.Logger) *Collector
 	return &Collector{
 		logger:      logger.WithField("component", "collector"),
 		config:      config,
+		intfStatus:  intfStatus,
 		intfMetrics: intfMetrics,
 		procMetrics: procMetrics,
 	}
 }
 
 func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
+
+	ch <- c.intfStatus
+
 	for _, desc := range c.intfMetrics {
 		ch <- desc
 	}
@@ -185,7 +200,7 @@ func (c *Collector) getMetricsFromNamespace(namespace string, wg *LimitedWaitGro
 	// Filter device name by regexp if device-filters declared in config
 	if (c.config.DeviceFilter.BlacklistPattern != "") ||
 		(c.config.DeviceFilter.WhitelistPattern != "") {
-			ifFiles = c.filteriFFiles(ifFiles)
+		ifFiles = c.filteriFFiles(ifFiles)
 	}
 
 	for _, ifFile := range ifFiles {
@@ -193,7 +208,6 @@ func (c *Collector) getMetricsFromNamespace(namespace string, wg *LimitedWaitGro
 		if ifFile.Name() == "lo" {
 			continue
 		}
-
 
 		c.logger.Debugf("Start getting statistics for interface %s in namespace %s", ifFile.Name(), namespace)
 
@@ -204,9 +218,12 @@ func (c *Collector) getMetricsFromNamespace(namespace string, wg *LimitedWaitGro
 		}
 
 		// parse routerID from namespace
-		routerID :=  strings.Replace(namespace, "qrouter-", "", -1)
-		// get current hostname 
+		routerID := strings.Replace(namespace, "qrouter-", "", -1)
+		// get current hostname
 		hostname := c.getHostname()
+
+		value, _ := c.getDeviceStatusMetricfromNS(namespace, ifFile.Name())
+		ch <- prometheus.MustNewConstMetric(c.intfStatus, prometheus.CounterValue, value, namespace, ifFile.Name(), routerID, hostname, device_addr)
 
 		for metricName, desc := range c.intfMetrics {
 			value := c.getMetricFromFile(namespace, InterfaceStatPath+ifFile.Name()+"/statistics/"+metricName)
@@ -303,14 +320,13 @@ func (c *Collector) filteriFFiles(ifFiles []os.FileInfo) []os.FileInfo {
 	return ifFiles
 }
 
-
-func (c *Collector) getHostname() (string) {
-    hostname, err := os.Hostname()
-    if err != nil {
+func (c *Collector) getHostname() string {
+	hostname, err := os.Hostname()
+	if err != nil {
 		c.logger.Debugf("Fail to get current hostname")
-        return ""
-    }
-    return hostname
+		return ""
+	}
+	return hostname
 }
 
 func (c *Collector) getIPfromNS(namespace, device string) (IP string, err error) {
@@ -342,11 +358,39 @@ func (c *Collector) getIPfromNS(namespace, device string) (IP string, err error)
 			c.logger.Errorf("Failed to parse IP address:", err)
 			return "nil", err
 		}
-		c.logger.Debugf("IP address %s %s in namespace %s",  iface.Name, ip, namespace)
+		c.logger.Debugf("IP address %s %s in namespace %s", iface.Name, ip, namespace)
 		return ip.String(), nil
 
-	} 
+	}
 	c.logger.Debugf("Interface %s no IP", iface.Name)
 	return "", nil
-	
+
+}
+
+func (c *Collector) getDeviceStatusMetricfromNS(namespace, device string) (adminStatus float64, err error) {
+
+	ns, err := netns.GetFromName(namespace)
+	if err != nil {
+		c.logger.Errorf("Failed to open namespace:", err)
+		return 2, err
+	}
+	defer ns.Close()
+
+	netns.Set(ns)
+	defer netns.Set(netns.None())
+
+	iface, err := net.InterfaceByName(device)
+	if err != nil {
+		c.logger.Errorf("Failed to retrieve interfaces:", err)
+		return 2, err
+	}
+
+	// Get adminStatus
+	if iface.Flags&net.FlagUp != 0 {
+		// "Up" -> 1
+		return 1, nil
+	} else {
+		// "Down" -> 0
+		return 0, nil
+	}
 }
