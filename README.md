@@ -56,10 +56,10 @@ $ curl http://127.0.0.1:8080/metrics | grep up
 ```
 Result
 ```
-# HELP netns_network__up Value is 1 if operstate is 'up', 0 otherwise.
-# TYPE netns_network__up counter
-netns_network__up{device="qg-aabbcc2",deviceIP="192.168.110.10",host="fedora",netns="qrouter-27e6b9c0-73c4-4624-9481-eb5c90f109bd",router="27e6b9c0-73c4-4624-9481-eb5c90f109bd"} 1
-netns_network__up{device="qr-aabbcc2",deviceIP="",host="fedora",netns="qrouter-1b5c74fb-56a8-4fbc-8e4e-c30f620b11bd" router="1b5c74fb-56a8-4fbc-8e4e-c30f620b11bd"} 0
+# HELP netns_network_up Value is 1 if operstate is 'up', 0 otherwise.
+# TYPE netns_network_up counter
+netns_network_up{device="qg-aabbcc2",deviceIP="192.168.110.10",host="fedora",netns="qrouter-27e6b9c0-73c4-4624-9481-eb5c90f109bd",router="27e6b9c0-73c4-4624-9481-eb5c90f109bd"} 1
+netns_network_up{device="qr-aabbcc2",deviceIP="",host="fedora",netns="qrouter-1b5c74fb-56a8-4fbc-8e4e-c30f620b11bd" router="1b5c74fb-56a8-4fbc-8e4e-c30f620b11bd"} 0
 ```
 
 ## Genral Example

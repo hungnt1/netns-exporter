@@ -46,7 +46,7 @@ func NewCollector(config *NetnsExporterConfig, logger *logrus.Logger) *Collector
 
 	// Add descriptions for interface adminStatus metric
 	intfStatus := prometheus.NewDesc(
-		prometheus.BuildFQName(collectorNamespace, collectorSubsystem, "_up"),
+		prometheus.BuildFQName(collectorNamespace, collectorSubsystem, "up"),
 		"Value is 1 if operstate is 'up', 0 otherwise.",
 		[]string{netnsLabel, deviceLabel, router, host, deviceIP},
 		nil,
