@@ -25,7 +25,7 @@ const (
 	netnsLabel         = "netns"
 	deviceLabel        = "device"
 	router             = "router"
-	host               = "host"
+	hostname           = "hostname"
 	deviceIP           = "deviceIP"
 )
 
@@ -48,7 +48,7 @@ func NewCollector(config *NetnsExporterConfig, logger *logrus.Logger) *Collector
 	intfStatus := prometheus.NewDesc(
 		prometheus.BuildFQName(collectorNamespace, collectorSubsystem, "up"),
 		"Value is 1 if operstate is 'up', 0 otherwise.",
-		[]string{netnsLabel, deviceLabel, router, host, deviceIP},
+		[]string{netnsLabel, deviceLabel, router, hostname, deviceIP},
 		nil,
 	)
 
@@ -58,7 +58,7 @@ func NewCollector(config *NetnsExporterConfig, logger *logrus.Logger) *Collector
 		intfMetrics[metric] = prometheus.NewDesc(
 			prometheus.BuildFQName(collectorNamespace, collectorSubsystem, metric+"_total"),
 			"Interface statistics in the network namespace",
-			[]string{netnsLabel, deviceLabel, router, host, deviceIP},
+			[]string{netnsLabel, deviceLabel, router, hostname, deviceIP},
 			nil,
 		)
 	}

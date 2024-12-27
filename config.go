@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io/ioutil"
+	"os"
 	"regexp"
 	"runtime"
 
@@ -14,7 +14,7 @@ type NetnsExporterConfig struct {
 	ProcMetrics      map[string]ProcMetric `yaml:"proc_metrics"`
 	Threads          int                   `yaml:"threads"`
 	NamespacesFilter NamespacesFilter      `yaml:"namespaces_filter"`
-	DeviceFilter 	DeviceFilter 		   `yaml:"device_filter"`
+	DeviceFilter     DeviceFilter          `yaml:"device_filter"`
 }
 
 type ProcMetric struct {
@@ -47,7 +47,7 @@ type DeviceFilter struct {
 func LoadConfig(path string) (*NetnsExporterConfig, error) {
 	cfg := NetnsExporterConfig{}
 
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,6 @@ func (nsFilter *NamespacesFilter) UnmarshalYAML(unmarshal func(interface{}) erro
 	return nil
 }
 
-
 func (devFilter *DeviceFilter) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	type plain DeviceFilter
 
@@ -103,4 +102,3 @@ func (devFilter *DeviceFilter) UnmarshalYAML(unmarshal func(interface{}) error) 
 
 	return nil
 }
-
