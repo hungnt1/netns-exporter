@@ -8,7 +8,7 @@ install-test:
 	@(cd; GO111MODULE=on go get github.com/golangci/golangci-lint/cmd/golangci-lint@v$(GLOLANGCI_LINT_VERSION))
 
 build:
-	go build
+	CGO_ENABLED=0 go build -o netns-exporter
 
 build-in-docker:
 	docker run -it --rm -v `pwd`:/go/netns-exporter -w /go/netns-exporter -e CGO_ENABLED=0 -e GOOS=linux golang:1.15 go build
