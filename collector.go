@@ -32,6 +32,7 @@ const (
 type Collector struct {
 	logger      logrus.FieldLogger
 	config      *NetnsExporterConfig
+	netnsStatus *prometheus.Desc
 	intfStatus  *prometheus.Desc
 	intfMetrics map[string]*prometheus.Desc
 	procMetrics map[string]*PrometheusProcMetric
@@ -43,6 +44,14 @@ type PrometheusProcMetric struct {
 }
 
 func NewCollector(config *NetnsExporterConfig, logger *logrus.Logger) *Collector {
+
+	// Add descriptions for netns count
+	netnsStatus := prometheus.NewDesc(
+		prometheus.BuildFQName(collectorNamespace, collectorSubsystem, "namespace"),
+		"Value is allways 1 for network namespace found",
+		[]string{netnsLabel, hostname},
+		nil,
+	)
 
 	// Add descriptions for interface adminStatus metric
 	intfStatus := prometheus.NewDesc(
@@ -79,6 +88,7 @@ func NewCollector(config *NetnsExporterConfig, logger *logrus.Logger) *Collector
 	return &Collector{
 		logger:      logger.WithField("component", "collector"),
 		config:      config,
+		netnsStatus: netnsStatus,
 		intfStatus:  intfStatus,
 		intfMetrics: intfMetrics,
 		procMetrics: procMetrics,
@@ -86,6 +96,8 @@ func NewCollector(config *NetnsExporterConfig, logger *logrus.Logger) *Collector
 }
 
 func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
+
+	ch <- c.netnsStatus
 
 	ch <- c.intfStatus
 
@@ -171,6 +183,8 @@ func (c *Collector) getMetricsFromNamespace(namespace string, wg *LimitedWaitGro
 
 		return
 	}
+
+	ch <- prometheus.MustNewConstMetric(c.netnsStatus, prometheus.CounterValue, 1, namespace, c.getHostname())
 
 	// Don't let any mounts propagate back to the parent
 	// See: https://github.com/shemminger/iproute2/blob/6754e1d9783458550dce8d309efb4091ec8089a5/lib/namespace.c#L77
