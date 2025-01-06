@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 
@@ -19,15 +18,15 @@ var (
 )
 
 func init() { //nolint:gochecknoinits
-	flag.StringVar(&cfgPath, "config", defaultConfigFile, fmt.Sprintf("Path to config file (default: %s)", defaultConfigFile))
+	flag.StringVar(&cfgPath, "config", defaultConfigFile, "Path to config file")
 	flag.StringVar(&logFilePath, "log-file", "", "Write logs to file (default: send logs to stdout)")
-	flag.StringVar(&logLevel, "log-level", "info", "Logging level (default: info)")
+	flag.StringVar(&logLevel, "log-level", "info", "Logging level")
 	flag.IntVar(&threads, "threads", 0, "Number of threads for collecting data (default: number of CPU cors)")
 }
 
 func main() {
 	flag.Parse()
-	// Init logger
+
 	logger := logrus.New()
 
 	level, err := logrus.ParseLevel(logLevel)
